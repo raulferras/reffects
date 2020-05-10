@@ -26,9 +26,14 @@ test('dispatching an event and receiving its payload', () => {
     expect(payload).toEqual(passedPayload);
   });
 
+  reffects.registerEventHandler(eventId, function(coeffects, payload) {
+    callsCounter++;
+    expect(payload).toEqual(passedPayload);
+  });
+
   reffects.dispatch({ id: eventId, payload: passedPayload });
 
-  expect(callsCounter).toEqual(1);
+  expect(callsCounter).toEqual(2);
 });
 
 test('dispatching an event represented as a string because it does not need payload', () => {

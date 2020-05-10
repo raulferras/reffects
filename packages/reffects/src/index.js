@@ -80,15 +80,18 @@ function extractCoeffectsValues(coeffectDescriptions) {
   }, {});
 }
 
-function applyEffects(effects) {
-  if (!effects) {
+function applyEffects(effectsCollection) {
+  if (!effectsCollection) {
     return;
   }
-  Object.entries(effects).forEach(function([effectId, effectData]) {
-    logEffect(effectId, effectData);
-    const effectHandler = getEffectHandler(effectId);
-    effectHandler(effectData);
-  });
+
+  effectsCollection.forEach((effects) => {
+    Object.entries(effects).forEach(function ([effectId, effectData]) {
+      logEffect(effectId, effectData);
+      const effectHandler = getEffectHandler(effectId);
+      effectHandler(effectData);
+    });
+  })
 }
 
 function normalizeEvent(event) {
@@ -103,10 +106,12 @@ function dispatch(event) {
   const normalizedEvent = normalizeEvent(event);
   logEvent(normalizedEvent);
   const { id, payload } = normalizedEvent;
-  const eventHandler = getEventHandler(id);
+  const eventHandlers = getEventHandler(id);
   const coeffectDescriptions = coeffectsByEvent[id];
   const coeffects = extractCoeffectsValues(coeffectDescriptions);
-  const effects = eventHandler(coeffects, payload);
+
+  const eventHandlers_ = Array.isArray(eventHandlers) ? eventHandlers : [eventHandlers];
+  const effects = eventHandlers_.map(eventHandler => eventHandler(coeffects, payload)).filter(element => element);
   applyEffects(effects);
 }
 
@@ -189,7 +194,15 @@ function coeffect(id, data) {
 }
 
 function setHandler(handlerType, handlerId, handler) {
-  handlers[handlerType][handlerId] = handler;
+  if (handlerType === 'events') {
+    if (typeof handlers[handlerType][handlerId] === 'undefined') {
+      handlers[handlerType][handlerId] = [];
+    }
+
+    handlers[handlerType][handlerId].push(handler);
+  } else {
+    handlers[handlerType][handlerId] = handler;
+  }
 }
 
 function getCoeffectHandler(coeffectId) {
@@ -206,6 +219,7 @@ function getEventHandler(eventId) {
 
 function clearHandlers() {
   handlers = { ...initialHandlers };
+  handlers.events = [];
   coeffectsByEvent = {};
 }
 
